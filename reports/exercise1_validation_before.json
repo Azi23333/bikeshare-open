@@ -1,0 +1,47 @@
+{
+  "commit": "67dd845a1c930a94d1b49abb9fee04cb9483e86d",
+  "n_train": 348,
+  "n_valid": 182,
+  "features": [
+    "temp",
+    "atemp",
+    "hum",
+    "windspeed",
+    "dayofweek",
+    "is_weekend",
+    "is_holiday",
+    "is_workday",
+    "month_sin",
+    "month_cos",
+    "weather_severity",
+    "cnt_lag_1",
+    "cnt_lag_7",
+    "cnt_roll_7"
+  ],
+  "versions": {
+    "numpy": "2.5.3",
+    "pandas": "3.0.5",
+    "pyarrow": "26.0.1",
+    "scikit-learn": "1.9.1",
+    "scipy": "1.18.1",
+    "pytest": "9.1.1"
+  },
+  "valid": {
+    "baseline_mean": {
+      "r2": -0.9318,
+      "mae": 2002.2
+    },
+    "baseline_persistence": {
+      "r2": 0.4507,
+      "mae": 900.6
+    },
+    "ridge": {
+      "r2": 0.6475,
+      "mae": 832.9
+    },
+    "hgb": {
+      "r2": 0.2185,
+      "mae": 1296.6
+    }
+  }
+}
