@@ -57,6 +57,20 @@ def test_rolling_mean_excludes_today(feats):
         assert feats.set_index("dteday").cnt_roll_7[date] == pytest.approx(expected)
 
 
+def test_roll_range_7_excludes_today(feats):
+    """cnt_roll_range_7 must be max-min of the 7 calendar days *before* today.
+
+    Expected value is hand-computed, independent of the feature code: the raw
+    counts for 2011-03-11 .. 2011-03-17 are 1977, 2132, 2417, 2046, 2056,
+    2192, 2744, so the trailing 7-day range on 2011-03-18 is 2744 - 1977 = 767.
+    """
+    if "cnt_roll_range_7" not in feature_columns(feats):
+        pytest.fail("cnt_roll_range_7 is missing from the model feature list")
+    got = feats.set_index("dteday").cnt_roll_range_7.get(pd.Timestamp("2011-03-18"))
+    assert got is not None, "no row for 2011-03-18 in feature table"
+    assert got == pytest.approx(767), f"cnt_roll_range_7 on 2011-03-18 is {got}, expected 767"
+
+
 def test_no_missing_values(feats):
     assert feats[feature_columns(feats)].isna().sum().sum() == 0
 
