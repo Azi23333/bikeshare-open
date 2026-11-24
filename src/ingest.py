@@ -1,13 +1,14 @@
-"""Stage 1: fetch the raw dataset and assert its shape.
+"""Stage 1: fetch the raw dataset and verify its checksum and shape.
 
 Run: python -m src.ingest
 """
 import sys
 import urllib.request
+from hashlib import sha256
 
 import pandas as pd
 
-from src.config import DATA_URL, RAW
+from src.config import DATA_URL, RAW, RAW_SHA256
 
 EXPECTED_MIN_ROWS = 700
 REQUIRED_COLS = {"dteday", "cnt", "casual", "registered", "temp", "hum", "windspeed"}
@@ -32,5 +33,7 @@ def load_raw() -> pd.DataFrame:
 
 if __name__ == "__main__":
     download(force="--force" in sys.argv)
+    if sha256(RAW.read_bytes()).hexdigest() != RAW_SHA256:
+        raise SystemExit(f"Raw CSV SHA-256 mismatch for {RAW.name}. Restore the original CSV.")
     df = load_raw()
     print(f"OK ingest: {len(df)} rows, {df.dteday.min().date()} -> {df.dteday.max().date()}")

@@ -26,3 +26,4 @@ The student approved the feature experiment and decided to keep the feature.
 
 - 2026-11-23 — Classified the raw columns in `src/config.py` so an unexpected header requires review. Added checks for exact copies of excluded columns and for unknown weather labels so those failures reach the test suite.
 - 2026-11-23 — Updated `CLAUDE.md` with `/seed-fault` and the raw-column rule so future agent runs can reproduce the break, test, and repair cycle.
+- 2026-11-23 — Added a SHA-256 check to `make data` because a shell copy could replace the dataset while passing the shape check. Pinned the CSV checkout bytes in `.gitattributes` so the same digest works across Git line-ending settings.
