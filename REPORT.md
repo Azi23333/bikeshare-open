@@ -35,17 +35,20 @@ I would deploy persistence for this daily forecast. Over the 184 test days, its 
 
 ## Attribution
 
-I used Claude Code 2.1.325 with Ollama Cloud's `glm-5.3-flash` (about 320B total parameters and 18B active) throughout the completed exercises. I stayed with it after setup, when a `gpt-oss:20b` probe returned HTTP 402. [Model card](https://ollama.com/library/glm-5.3-flash)
+I used Claude Code 2.1.325 with Ollama Cloud's `glm-5.3-flash` (about 320B total parameters, 18B active). I kept it for Exercises 1–5 after a `gpt-oss:20b` setup check returned HTTP 402. [Model card](https://ollama.com/library/glm-5.3-flash)
 
 **Agent work**
 
-- Claude Code used `/new-feature` to draft `cnt_roll_range_7` in `src/features.py` and its test in `tests/test_leakage.py`. Codex checked the model input list and verified that the test failed before the feature and passed afterward.
-- Claude Code ran the fault and repair sequences through `/seed-fault`. Codex drafted the skill, added the contract tests and raw CSV checksum check, and saved the test and hook output. [Fault evidence](docs/SEEDED_FAULTS.md)
-- Claude Code's `leakage-auditor` reviewed Kyle's code. The Agent SDK ran the formal self-audit and reported no findings. Codex updated the auditor to check the actual Parquet model inputs and verified the saved artifacts. [Peer audit](docs/AUDIT.md) · [Self-audit](reports/audit.jsonl)
-- Claude Code drafted `experiments/target_ratio_validation.py`. Codex saved and checked the script, ran the validation and final evaluation commands, and helped write this report.
+- Claude Code drafted the `cnt_roll_range_7` calculation in `src/features.py` and the initial `test_roll_range_7_excludes_today()` in `tests/test_leakage.py`.
+- It drafted `experiments/target_ratio_validation.py` for the HGB target-ratio experiment.
+- It made and repaired the seeded-fault edits in `src/features.py` and produced the peer audit findings in `docs/AUDIT.md`.
+
+Codex helped with implementation and verification. The Agent SDK produced the self-audit in `reports/audit.jsonl`.
 
 **Decisions I made**
 
-- I kept one-day-ahead total rides as the target and used the starter's excluded columns, date split, and mean and persistence baselines.
-- I kept the seven-day range based on Ridge's validation improvement. I kept the weekly ratio on an experiment branch because its inputs are available before the forecast.
-- I chose persistence for deployment because its test MAE was lower and it is easier to maintain. [Decision log](docs/DECISIONS.md)
+- I kept one-day-ahead total rides as the target, used the starter's date split to evaluate on later dates, and kept mean and persistence as simple benchmarks.
+- I kept the starter's leakage exclusions, including `casual` and `registered`, which add up to the target.
+- I kept the seven-day range because it improved both Ridge validation metrics.
+- I kept the HGB target ratio as a separate experiment because the past week's counts are available at forecast time.
+- I chose persistence for deployment because it had lower test MAE and only needs yesterday's count.
