@@ -11,12 +11,12 @@ Agents append here via the `/new-feature` skill; you append here by hand.
 
 ## Exercise 1
 
-- 2026-11-23 — Approved testing `cnt_roll_range_7` to measure demand variation using complete daily counts from the seven calendar days before the forecast date. On 182 validation days in H1 2012, Ridge changed by +0.0712 R² and −122.6 MAE, and HGB changed by −0.1474 R² and +105.7 MAE. Both baselines were unchanged. [Before](../reports/exercise1_validation_before.json) · [After](../reports/exercise1_validation_after.json)
-- 2026-11-23 — Kept the starter's `CLAUDE.md` for this exercise because its calendar alignment, shift-before-aggregation, and feature test rules already covered the new feature.
-- 2026-11-23 — Kept `cnt_roll_range_7` because Ridge had the stronger validation performance, gained more than 0.01 R², and reduced MAE.
+- 2026-11-23 — I chose to test `cnt_roll_range_7` to see whether recent swings in demand help predict ridership. It takes the highest minus the lowest daily count from the seven calendar days before the forecast date. Across 182 validation days in the first half of 2012, Ridge's R² rose by 0.0712 and its MAE fell by 122.6 rides. HGB's R² fell by 0.1474 and its MAE rose by 105.7 rides. Both baselines stayed the same. [Before](../reports/exercise1_validation_before.json) · [After](../reports/exercise1_validation_after.json)
+- 2026-11-23 — Exercise 1 used the starter's `CLAUDE.md` as written. It already required a gap-free calendar, shifting before aggregation, and a test for each new lag or rolling feature.
+- 2026-11-23 — I kept `cnt_roll_range_7` because Ridge was the stronger model on validation. Its R² gain cleared the 0.01 threshold and its MAE was lower.
 
 ## Exercise 2
 
-- 2026-11-23 — Classified raw columns in `src/config.py` so unexpected headers require review. Added tests for exact copies of excluded columns and for unknown weather labels.
-- 2026-11-23 — Added `/seed-fault` and the raw-column rule to `CLAUDE.md` to make the fault, test, and repair sequence reproducible.
-- 2026-11-23 — Added a SHA-256 check to `make data` after a replacement CSV passed the original shape check. Used `.gitattributes` to keep the CSV's bytes consistent across Git line-ending settings.
+- 2026-11-23 — `src/config.py` lists the known raw columns so new headers get reviewed. The tests flag unclassified columns, exact copies of excluded columns, and unknown weather labels.
+- 2026-11-23 — `CLAUDE.md` now points to `/seed-fault` for repeating the fault, test, and repair steps. It also says to classify raw columns before using them.
+- 2026-11-23 — A replacement CSV passed the original shape check, so `make data` now checks the file's SHA-256 hash. `.gitattributes` keeps Git from changing the CSV's line endings on checkout.
