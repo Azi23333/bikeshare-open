@@ -1,91 +1,60 @@
-# Bikeshare demand capstone
+# Capital Bikeshare demand forecast
 
-Reference repository for the DSC 180A methodology lesson on agentic
-programming. Forecasts daily Capital Bikeshare ridership (`cnt`) for
-Washington, DC, 2011-2012, with a leakage trap in the data.
+This DSC 180A project forecasts total daily Capital Bikeshare rides in Washington, DC, one day ahead. It trains on 2011, validates on the first half of 2012, and tests on the second half of 2012.
 
-The agent is Claude Code driving an **open-weight model running on your own
-machine** through Ollama. No Anthropic account, subscription, or API key is
-needed. Nothing leaves your laptop.
+[GitHub repository](https://github.com/Azi23333/bikeshare-open) · [Final report](REPORT.md)
 
-## Setup
+## Run the pipeline
 
-    # 1. Ollama (the local model server)   https://ollama.com/download
-    ollama serve                           # leave running in its own terminal
+These commands use Ubuntu in Windows Subsystem for Linux (WSL), Python 3.14.4, Git, and GNU Make. Run them from a WSL terminal.
 
-    # 2. Claude Code (the agent harness; free to install, no login needed here)
-    curl -fsSL https://claude.ai/install.sh | bash
+```bash
+git clone https://github.com/Azi23333/bikeshare-open.git
+cd bikeshare-open
+python3.14 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+export OMP_NUM_THREADS=2
+make all
+make test
+```
 
-    # 3. This repo
-    python3 -m venv .venv && source .venv/bin/activate
-    pip install -r requirements.txt
-    make model          # pulls the base model, builds `bikeshare-coder` with a 64k context
-    make check-model    # confirms Claude Code can reach it and that tool calls work
-    make all            # data -> features -> train, writes reports/metrics.json
-    make test           # 14 tests
+`make all` checks the bundled CSV's checksum, builds the feature table, and writes `reports/metrics.json`. The top-level scores use the final feature set and the original ride-count target. `exercise1_before` holds the results from the starter at `67dd845`, saved in `reports/exercise1_metrics_before.json`. `make test` runs all 18 tests, including the final Ridge threshold check. The pipeline and tests run locally after dependency installation.
 
-    # 4. Start the agent, from the repo root
-    claude
+Run `python -m src.leakage_demo` to reproduce the deliberately leaky example. The separate HGB target-ratio experiment can be run from its branch with `python -m experiments.target_ratio_validation`. [Experiment branch](https://github.com/Azi23333/bikeshare-open/tree/exercise4-target-ratio) · [Saved validation results](reports/exercise4_validation.json)
 
-`.claude/settings.json` points Claude Code at `http://localhost:11434` and
-names the model, so `claude` works with no environment variables. Run
-`/status` inside Claude Code to confirm it says `bikeshare-coder`.
+## Claude Code and Ollama Cloud
 
-### Which base model
+The exercises used Claude Code 2.1.325 in WSL with Ollama Cloud's `glm-5.3-flash`. To use the same setup, install [Claude Code](https://code.claude.com/docs/en/setup) in WSL and put this configuration in `.claude/settings.local.json`. Replace the placeholder with your Ollama Cloud API key. Git ignores the file.
 
-`make model` builds from `qwen3.5:9b` by default. Pick by memory:
+```json
+{
+  "model": "glm-5.3-flash",
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://ollama.com",
+    "ANTHROPIC_AUTH_TOKEN": "<your Ollama Cloud key>",
+    "ANTHROPIC_API_KEY": ""
+  }
+}
+```
 
-| Your machine | Base model | `make model` command |
-|---|---|---|
-| 16 GB RAM (any laptop) | `qwen3.5:9b` (~7 GB) | `make model` |
-| 32 GB RAM, or 24 GB+ Apple Silicon | `qwen3.5:27b` (~18 GB) | `make model BASE=qwen3.5:27b` |
-| 48 GB+ | `qwen3.5:35b` (~22 GB) | `make model BASE=qwen3.5:35b` |
-| Under 16 GB, or no patience | a hosted model, below | — |
+Start `claude` from the repository root and use `/status` to check the model. See `CLAUDE.md` for project rules and `.claude/skills/` for `/new-feature` and `/seed-fault`.
 
-The 64k context window adds several GB on top of the download size at run
-time. If the model runs but is painfully slow, drop a size, not the context.
-Any tool-capable model from the Ollama library works; the lesson does not
-depend on this one. Record which model you used in `REPORT.md`.
+The submitted SDK self-audit is in `reports/audit.jsonl`. To rerun it after `make all`, activate the Python environment and set the cloud credentials in the shell. This example writes the repeat run to the ignored `audit.jsonl` at the repo root.
 
-### If your laptop cannot run a model
+```bash
+read -rsp 'Ollama Cloud API key: ' ANTHROPIC_AUTH_TOKEN
+printf '\n'
+export ANTHROPIC_AUTH_TOKEN
+export ANTHROPIC_BASE_URL=https://ollama.com ANTHROPIC_API_KEY='' AUDIT_MODEL=glm-5.3-flash
+python agent/audit.py . --out audit.jsonl --concurrency 1
+unset ANTHROPIC_AUTH_TOKEN
+```
 
-Ollama can serve the same models from its cloud, and Claude Code can point at
-any endpoint that speaks the Anthropic Messages API. Override the repo
-settings in `.claude/settings.local.json` (git-ignored) rather than editing
-`settings.json`:
+## Data and evidence
 
-    {
-      "model": "qwen3.5:27b-cloud",
-      "env": {
-        "ANTHROPIC_BASE_URL": "https://ollama.com",
-        "ANTHROPIC_AUTH_TOKEN": "<your Ollama API key>",
-        "ANTHROPIC_API_KEY": ""
-      }
-    }
+`data/raw/bike_daily.csv` is the daily Bike Sharing Dataset (Fanaee-T and Gama, 2013) from the processed mirror used in Christoph Molnar's *Interpretable Machine Learning*. `src/config.py` lists how the mirror differs from the UCI release. [Processed source CSV](https://raw.githubusercontent.com/christophM/interpretable-ml-book/master/data/bike.csv)
 
-Model names and free-tier limits for hosted models change; check
-`ollama.com/search?c=cloud` for what is current. A paid Anthropic plan also
-works, with `"env": {}` to clear the override, and is the only setup in
-which `model: opus` or `sonnet` names mean anything.
-
-## Data
-
-Daily aggregation of the UCI Bike Sharing Dataset (Fanaee-T and Gama, 2013),
-via the processed mirror used in Molnar's *Interpretable Machine Learning*:
-
-    https://raw.githubusercontent.com/christophM/interpretable-ml-book/master/data/bike.csv
-
-The mirror differs from the UCI file. See `src/config.py` for the list.
-`data/raw/bike_daily.csv` is a checked-in copy so the pipeline runs offline;
-it is immutable (writes are denied in `.claude/settings.json`).
-
-`python -m src.leakage_demo` reproduces the R^2 = 1.000 result from the lesson.
-
-## Layout
-
-See `CLAUDE.md` for the standing rules and `src/config.py` for every constant.
-`.claude/` holds the hook, permissions, reviewer subagent and `new-feature`
-skill the lesson builds in Steps 7-8. `model/` holds the Modelfile and the
-readiness check. `agent/audit.py` is the Agent SDK batch auditor from Part 4;
-it uses the same local endpoint (`AUDIT_MODEL` overrides the model). Record
-methodological decisions in `docs/DECISIONS.md`.
+- [Research decisions](docs/DECISIONS.md)
+- [Test-first and seeded-fault evidence](docs/SEEDED_FAULTS.md)
+- [Peer leakage audit](docs/AUDIT.md)
