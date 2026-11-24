@@ -170,3 +170,65 @@ $ python -m pytest tests/test_leakage.py::test_rolling_mean_excludes_today -q --
 .                                                                        [100%]
 1 passed in 4.37s
 ~~~
+
+### Silent weather encoding
+
+`/seed-fault weather-raise` changed `src/features.py` as shown below.
+
+~~~diff
+--- a/src/features.py
++++ b/src/features.py
+@@ -27,7 +27,7 @@
+     known = series.dropna()
+     unknown = set(known.unique()) - set(WEATHER_ORDER)
+     if unknown:
+-        raise ValueError(f"unmapped weather labels: {sorted(unknown)}")
++        pass
+     return series.map(WEATHER_ORDER).astype(float)
+
+
+~~~
+
+The `PostToolUse:Edit` hook returned exit 2 before the direct pytest run.
+
+~~~text
+Leakage tests failed after editing src/features.py:
+...F......                                                               [100%]
+=================================== FAILURES ===================================
+_______________________ test_unknown_weather_is_rejected _______________________
+
+    def test_unknown_weather_is_rejected():
+>       with pytest.raises(ValueError, match="unmapped weather labels.*UNKNOWN"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/test_leakage.py:43: Failed
+=========================== short test summary info ============================
+FAILED tests/test_leakage.py::test_unknown_weather_is_rejected - Failed: DID ...
+1 failed, 9 passed in 13.27s
+~~~
+
+The targeted test failed in Bash.
+
+~~~text
+$ python -m pytest tests/test_leakage.py::test_unknown_weather_is_rejected -q --tb=short
+Error: Exit code 1
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_______________________ test_unknown_weather_is_rejected _______________________
+tests/test_leakage.py:43: in test_unknown_weather_is_rejected
+    with pytest.raises(ValueError, match="unmapped weather labels.*UNKNOWN"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE ValueError
+=========================== short test summary info ============================
+FAILED tests/test_leakage.py::test_unknown_weather_is_rejected - Failed: DID ...
+1 failed in 12.64s
+~~~
+
+Claude Code restored the original line(s) in **2 repair turns**. The repair hook returned exit 0, and the same test passed.
+
+~~~text
+$ python -m pytest tests/test_leakage.py::test_unknown_weather_is_rejected -q --tb=short
+.                                                                        [100%]
+1 passed in 6.51s
+~~~
