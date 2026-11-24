@@ -45,6 +45,11 @@ UNVERIFIED_COLS = {"cnt_2d_bfr"}
 # What feature_columns() and the tests actually enforce.
 FORBIDDEN = LEAKAGE_COLS | TIME_INDEX_COLS | UNVERIFIED_COLS
 
+# Raw inputs used directly or turned into model features, and unused labels.
+RAW_FEATURE_INPUTS = {"temp", "atemp", "hum", "windspeed", "holiday", "workday", "weather"}
+RAW_UNUSED_COLS = {"season", "mnth", "weekday"}
+CLASSIFIED_RAW_COLS = FORBIDDEN | RAW_FEATURE_INPUTS | RAW_UNUSED_COLS | {"dteday"}
+
 # Temporal split: train on 2011, validate on H1 2012, test on H2 2012.
 TRAIN_END = "2011-12-31"
 VALID_END = "2012-06-30"

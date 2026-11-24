@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 from sklearn.metrics import r2_score
 
-from src.config import LAG_WARMUP, TARGET
+from src.config import CLASSIFIED_RAW_COLS, LAG_WARMUP, TARGET
 from src.features import build_features, feature_columns, reindex_to_calendar
 from src.ingest import load_raw
 from src.train import MODELS, temporal_split
@@ -17,6 +17,11 @@ def raw():
 @pytest.fixture(scope="module")
 def feats(raw):
     return build_features(raw)
+
+
+def test_raw_columns_are_classified(raw):
+    unclassified = set(raw.columns) - CLASSIFIED_RAW_COLS
+    assert not unclassified, f"unclassified raw columns: {sorted(unclassified)}"
 
 
 def test_calendar_is_complete_before_lagging(raw):

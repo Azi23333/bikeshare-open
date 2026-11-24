@@ -8,7 +8,7 @@ import pandas as pd
 import pytest
 
 from src.config import FORBIDDEN, TARGET
-from src.features import build_features, feature_columns
+from src.features import build_features, encode_weather, feature_columns
 from src.ingest import load_raw
 
 
@@ -29,6 +29,19 @@ def test_no_forbidden_features(feats):
     exactly the fault the Step 7 hook demonstrates."""
     cols = set(feature_columns(feats))
     assert not (cols & FORBIDDEN), f"forbidden columns in feature set: {cols & FORBIDDEN}"
+
+
+def test_no_feature_copies_a_forbidden_column(feats):
+    for candidate in set(feature_columns(feats)) - FORBIDDEN:
+        for forbidden in FORBIDDEN & set(feats.columns):
+            assert not feats[candidate].eq(feats[forbidden]).all(), (
+                f"{candidate} copies forbidden column {forbidden}"
+            )
+
+
+def test_unknown_weather_is_rejected():
+    with pytest.raises(ValueError, match="unmapped weather labels.*UNKNOWN"):
+        encode_weather(pd.Series(["GOOD", "UNKNOWN"]))
 
 
 def test_lags_are_true_calendar_lags(feats):

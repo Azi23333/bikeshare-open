@@ -21,3 +21,8 @@ connection probe ended at HTTP 402. Codex set up the environment, proposed the
 feature, tightened the model-input assertion, simplified the rolling code,
 verified both checkpoints, recorded the failure, and ran the validation comparison.
 The student approved the feature experiment and decided to keep the feature.
+
+### Exercise 2 decisions
+
+- 2026-11-23 — Classified the raw columns in `src/config.py` so an unexpected header requires review. Added checks for exact copies of excluded columns and for unknown weather labels so those failures reach the test suite.
+- 2026-11-23 — Updated `CLAUDE.md` with `/seed-fault` and the raw-column rule so future agent runs can reproduce the break, test, and repair cycle.
