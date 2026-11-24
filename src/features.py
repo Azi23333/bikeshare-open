@@ -75,6 +75,10 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     out["cnt_lag_7"] = out[TARGET].shift(LAG_WARMUP)
     out["cnt_roll_7"] = out[TARGET].shift(1).rolling(LAG_WARMUP).mean()
 
+    # Demand variation over the seven calendar days before the forecast date.
+    trailing_week = out[TARGET].shift(1).rolling(LAG_WARMUP)
+    out["cnt_roll_range_7"] = trailing_week.max() - trailing_week.min()
+
     return out.dropna().reset_index(drop=True)
 
 
