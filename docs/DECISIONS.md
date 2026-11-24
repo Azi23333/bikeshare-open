@@ -20,3 +20,9 @@ Agents append here via the `/new-feature` skill; you append here by hand.
 - 2026-11-23 — `src/config.py` lists the known raw columns so new headers get reviewed. The tests flag unclassified columns, exact copies of excluded columns, and unknown weather labels.
 - 2026-11-23 — `CLAUDE.md` now points to `/seed-fault` for repeating the fault, test, and repair steps. It also says to classify raw columns before using them.
 - 2026-11-23 — A replacement CSV passed the original shape check, so `make data` now checks the file's SHA-256 hash. `.gitattributes` keeps Git from changing the CSV's line endings on checkout.
+
+## Exercise 4
+
+- 2026-11-23 — The HGB experiment used the daily ride count divided by the previous seven days' average. Predictions were multiplied by that average before scoring. Across 182 validation days, R² went from 0.0711 to 0.7446 (+0.6735), and MAE fell from 1402.3 to 697.0 rides (−705.3). I kept this as a separate experiment because the previous week's actual counts are available for a one-day-ahead forecast and give HGB a way to adjust to changing demand. [Validation results](../reports/exercise4_validation.json)
+
+The experiment is on branch `exercise4-target-ratio` at `68c4cc0`. Run it on that branch with `python -m experiments.target_ratio_validation`.

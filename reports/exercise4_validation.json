@@ -1,0 +1,55 @@
+{
+  "n_train": 348,
+  "n_valid": 182,
+  "features": [
+    "temp",
+    "atemp",
+    "hum",
+    "windspeed",
+    "dayofweek",
+    "is_weekend",
+    "is_holiday",
+    "is_workday",
+    "month_sin",
+    "month_cos",
+    "weather_severity",
+    "cnt_lag_1",
+    "cnt_lag_7",
+    "cnt_roll_7",
+    "cnt_roll_range_7"
+  ],
+  "validation_end": "2012-06-30",
+  "scikit_learn_version": "1.9.1",
+  "target_transformation": "cnt / cnt_roll_7",
+  "inverse_transformation": "predicted_ratio * cnt_roll_7",
+  "training_mean_count": 3493.5,
+  "validation_mean_count": 5152.1,
+  "training_mean_ratio": 1.0153,
+  "validation_mean_ratio": 1.0299,
+  "validation": {
+    "baseline_mean": {
+      "r2": -0.9318,
+      "mae": 2002.2
+    },
+    "baseline_persistence": {
+      "r2": 0.4507,
+      "mae": 900.6
+    },
+    "ridge": {
+      "r2": 0.7187,
+      "mae": 710.3
+    },
+    "hgb": {
+      "r2": 0.0711,
+      "mae": 1402.3
+    },
+    "hgb_ratio": {
+      "r2": 0.7446,
+      "mae": 697.0
+    }
+  },
+  "hgb_ratio_minus_hgb": {
+    "r2": 0.6735,
+    "mae": -705.3
+  }
+}
