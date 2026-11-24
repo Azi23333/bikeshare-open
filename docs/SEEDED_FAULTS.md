@@ -1,11 +1,13 @@
 # Seeded faults
 
-## Exercise 1 test-first run
+Both exercises used Claude Code 2.1.325 with `glm-5.3-flash` via Ollama Cloud.
+The setup probe for `gpt-oss:20b` returned HTTP 402.
 
-Claude Code 2.1.325 with `glm-5.3-flash` via Ollama Cloud used `/new-feature`
-to write and run the initial test. Codex tightened the column check to verify
-that the predictor reaches the model. Codex then ran
-`PYTEST_ADDOPTS=--tb=short make test` before the feature existed. Make exited
+## Exercise 1
+
+Claude Code used `/new-feature` to write and run the initial test and to
+implement the feature. The test was refined to check that the predictor reaches
+the model. Before implementation, `PYTEST_ADDOPTS=--tb=short make test` exited
 with status 2.
 
 The test uses only the seven days before 2011-03-18. From 2011-03-11 through
@@ -28,7 +30,10 @@ make: *** [Makefile:16: test] Error 1
 
 ## Exercise 2
 
-Each source fault used a fresh Claude Code 2.1.325 session with `glm-5.3-flash` through Ollama Cloud. Claude Code made the temporary edits and repaired them. Codex set up the checks, checked the restored file against Git, and collected the transcripts. Repair turns count assistant responses after the failing hook through the restoring edit as repair turns. The pasted output omits local checkout paths and trailing whitespace.
+Each source fault ran in a fresh Claude Code session. Repair turns count
+responses after the failing hook through the edit that restored the code.
+Git diffs confirmed that each repair restored `src/features.py`. The pasted
+output omits local checkout paths and trailing whitespace.
 
 ### Forbidden column
 
@@ -91,7 +96,8 @@ FAILED tests/test_leakage.py::test_no_forbidden_features - AssertionError: fo...
 1 failed in 11.38s
 ~~~
 
-Claude Code restored the original line(s) in **2 repair turns**. The repair hook returned exit 0, and the same test passed.
+Claude Code removed the appended `casual` in **2 repair turns**. The repair
+hook returned exit 0, and the same test passed.
 
 ~~~text
 $ python -m pytest tests/test_leakage.py::test_no_forbidden_features -q --tb=short && git diff --stat
@@ -163,7 +169,8 @@ FAILED tests/test_leakage.py::test_rolling_mean_excludes_today - assert np.fl...
 1 failed in 8.27s
 ~~~
 
-Claude Code restored the original line(s) in **2 repair turns**. The repair hook returned exit 0, and the same test passed.
+Claude Code restored `.shift(1)` in **2 repair turns**. The repair hook
+returned exit 0, and the same test passed.
 
 ~~~text
 $ python -m pytest tests/test_leakage.py::test_rolling_mean_excludes_today -q --tb=short
@@ -225,7 +232,8 @@ FAILED tests/test_leakage.py::test_unknown_weather_is_rejected - Failed: DID ...
 1 failed in 12.64s
 ~~~
 
-Claude Code restored the original line(s) in **2 repair turns**. The repair hook returned exit 0, and the same test passed.
+Claude Code restored the `ValueError` in **2 repair turns**. The repair hook
+returned exit 0, and the same test passed.
 
 ~~~text
 $ python -m pytest tests/test_leakage.py::test_unknown_weather_is_rejected -q --tb=short
@@ -235,14 +243,19 @@ $ python -m pytest tests/test_leakage.py::test_unknown_weather_is_rejected -q --
 
 ### Raw CSV replacement through Bash
 
-The replacement changed the first day's `temp` from `1.229108` to `1.329108`. The copy lived under `.venv`, and the tracked CSV kept its original checksum throughout. The first Claude Code call was declined in `dontAsk` mode. The rerun used `acceptEdits` for that session and ran the single copy command. The project hook and permission rules stayed the same.
+The replacement changed the first day's `temp` from `1.229108` to `1.329108`
+in a copy under `.venv`. The tracked CSV kept its original checksum.
+The first Bash command was denied in `dontAsk` mode. A single `acceptEdits`
+session ran the copy with the existing project hook and permission rules.
 
 ~~~text
 $ cp .venv/exercise2/raw-copy/replacement.csv .venv/exercise2/raw-copy/data/raw/bike_daily.csv
 {"stdout": "", "stderr": "", "interrupted": false, "isImage": false, "noOutputExpected": true}
 ~~~
 
-The transcript had zero `PostToolUse` events for the Bash call. The hook matches `Edit` and `Write`. The old `make data` still accepted the changed file because its columns and row count were valid.
+The Bash call produced no `PostToolUse` event. The hook watches `Edit` and
+`Write`. The original `make data` accepted the replacement because its columns
+and row count were valid.
 
 Original copy with the starter check
 
@@ -336,7 +349,9 @@ make data exit: 0
 
 ### Contract test controls
 
-Codex ran two more isolated checks. Each targeted pytest run exited with status 1. The first added `unreviewed_sensor` to the raw CSV. The second added `innocent_sensor` to the feature table as an exact copy of `casual`.
+Two additional checks ran in isolated copies. Both targeted pytest runs exited
+with status 1. One added `unreviewed_sensor` to the raw CSV. The other added
+`innocent_sensor` to the feature table as an exact copy of `casual`.
 
 ~~~text
 E   AssertionError: unclassified raw columns: ['unreviewed_sensor']
@@ -345,5 +360,3 @@ E   AssertionError: unclassified raw columns: ['unreviewed_sensor']
 ~~~text
 E   AssertionError: innocent_sensor copies forbidden column casual
 ~~~
-
-Codex drafted `/seed-fault`, the contract checks, and the checksum change. Claude Code ran the three source experiments and the isolated Bash copy. Codex verified the copy and ran the checksum and contract controls.
