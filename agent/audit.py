@@ -45,12 +45,12 @@ from claude_agent_sdk import (
 @tool(
     "check_identity",
     "Test whether any subset of candidate columns is an exact linear "
-    "restatement of the target column. Returns the offending subsets.",
+    "restatement of the target column in a CSV or Parquet table. Returns the offending subsets.",
     {"csv_path": str, "target": str, "candidates": list},
 )
 async def check_identity(args: dict[str, Any]) -> dict[str, Any]:
-    df = pd.read_csv(args["csv_path"])
-    target = df[args["target"]].to_numpy(dtype=float)
+    path = Path(args["csv_path"])
+    df = pd.read_parquet(path) if path.suffix.lower() == ".parquet" else pd.read_csv(path)
     cols = [c for c in args["candidates"] if c in df.columns and c != args["target"]]
 
     # Least squares with an intercept column, so `cnt = a*x + b` is caught
@@ -94,17 +94,19 @@ write this code and you have no stake in it passing.
 Check exactly four things:
   1. Target leakage: any feature that contains, restates, or derives from
      the target. Use the check_identity tool on the processed feature
-     table rather than judging by column names.
+     table with the actual model inputs as candidates. In this pipeline,
+     those are the top-level features in reports/metrics.json.
   2. Temporal validity: splits by date not at random; every rolling or
      lag feature shifts before it aggregates; no transformer is fit on
      validation or test rows.
-  3. Baseline: a mean or naive-persistence baseline reported next to
+  3. Baseline: a mean and a naive-persistence baseline reported next to
      every model score.
   4. Reproducibility: the pipeline runs from a documented command and
      random seeds are fixed.
 
-Verify by reading files and running code. Do not accept a docstring or a
-README claim as evidence.
+Use the source code and saved results as evidence. Run the identity check
+without refitting or scoring models. Use paths relative to the repo in
+findings.
 
 Your final answer is a single JSON object matching the schema you were
 given. No prose around it.
@@ -142,21 +144,20 @@ REPORT_SCHEMA = {
 
 
 async def audit_repo(repo: Path) -> dict[str, Any]:
+    repo_name = repo.resolve().name
     options = ClaudeAgentOptions(
         system_prompt=SYSTEM,
         cwd=str(repo),
         mcp_servers={"audit": auditor_tools},
+        tools=["Read", "Grep", "Glob"],
         allowed_tools=[
             "Read",
             "Grep",
             "Glob",
-            "Bash",
             "mcp__audit__check_identity",
         ],
-        # allowed_tools is the boundary. Anything not listed is denied
-        # automatically in a headless run, so the auditor can read and run
-        # but has no Edit or Write to grant.
-        permission_mode="default",
+        disallowed_tools=["Read(./.claude/settings.local.json)", "Read(./.venv/**)"],
+        permission_mode="dontAsk",
         max_turns=40,
         model=os.environ.get("AUDIT_MODEL", "bikeshare-coder"),
         output_format={"type": "json_schema", "schema": REPORT_SCHEMA},
@@ -171,17 +172,17 @@ async def audit_repo(repo: Path) -> dict[str, Any]:
             final = message
 
     if final is None or final.is_error:
-        return {"repo": repo.name, "error": "run_failed",
+        return {"repo": repo_name, "error": "run_failed",
                 "raw": (final.result or "")[:500] if final else ""}
     if final.structured_output is not None:
-        return {"repo": repo.name, **final.structured_output}
+        return {**final.structured_output, "repo": repo_name}
     try:
         # Belt and braces: small open-weight models do not always honour
         # the schema; fall back to parsing the final text.
-        return {"repo": repo.name, **json.loads((final.result or "").strip())}
+        return {**json.loads((final.result or "").strip()), "repo": repo_name}
     except json.JSONDecodeError:
         # Never let one malformed reply kill a 40-repo run.
-        return {"repo": repo.name, "error": "unparseable", "raw": (final.result or "")[:500]}
+        return {"repo": repo_name, "error": "unparseable", "raw": (final.result or "")[:500]}
 
 
 async def main() -> None:

@@ -88,6 +88,9 @@ def fit_and_score() -> dict:
 
 if __name__ == "__main__":
     res = fit_and_score()
+    before = METRICS.with_name("exercise1_metrics_before.json")
+    if before.is_file():
+        res["exercise1_before"] = json.loads(before.read_text(encoding="utf-8"))
     METRICS.parent.mkdir(parents=True, exist_ok=True)
     METRICS.write_text(json.dumps(res, indent=2))
     print(json.dumps({k: v for k, v in res.items() if k != "features"}, indent=2))

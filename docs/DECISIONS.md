@@ -26,3 +26,9 @@ Agents append here via the `/new-feature` skill; you append here by hand.
 - 2026-11-23 — The HGB experiment used the daily ride count divided by the previous seven days' average. Predictions were multiplied by that average before scoring. Across 182 validation days, R² went from 0.0711 to 0.7446 (+0.6735), and MAE fell from 1402.3 to 697.0 rides (−705.3). I kept this as a separate experiment because the previous week's actual counts are available for a one-day-ahead forecast and give HGB a way to adjust to changing demand. [Validation results](../reports/exercise4_validation.json)
 
 The experiment is on branch `exercise4-target-ratio` at `68c4cc0`. Run it on that branch with `python -m experiments.target_ratio_validation`.
+
+## Exercise 5
+
+- 2026-11-23 — The features and models were fixed before the final H2 2012 evaluation. The original starter at `67dd845` and the current raw-count pipeline each ran `make all` on the same splits. The archived starter results are included under `exercise1_before` in the final metrics file. [Final metrics](../reports/metrics.json) · [Starter metrics](../reports/exercise1_metrics_before.json)
+- 2026-11-23 — On the final test set, Ridge had the higher R² (0.6279 versus 0.5099), while Persistence had the lower MAE (840.1 versus 863.1 rides). Ridge also needs more inputs, while Persistence only needs yesterday's ride count.
+- 2026-11-23 — The Agent SDK self-audit ran on a copy of the frozen pipeline and its saved results with `glm-5.3-flash` via Ollama Cloud. It checked the actual model inputs in the Parquet table and reported no findings. [Self-audit output](../reports/audit.jsonl)
