@@ -98,3 +98,75 @@ $ python -m pytest tests/test_leakage.py::test_no_forbidden_features -q --tb=sho
 .                                                                        [100%]
 1 passed in 5.22s
 ~~~
+
+### Rolling mean without a lag
+
+`/seed-fault rolling-shift` changed `src/features.py` as shown below.
+
+~~~diff
+--- a/src/features.py
++++ b/src/features.py
+@@ -73,7 +73,7 @@
+     # If you add a longer lag, raise LAG_WARMUP in src/config.py.
+     out["cnt_lag_1"] = out[TARGET].shift(1)
+     out["cnt_lag_7"] = out[TARGET].shift(LAG_WARMUP)
+-    out["cnt_roll_7"] = out[TARGET].shift(1).rolling(LAG_WARMUP).mean()
++    out["cnt_roll_7"] = out[TARGET].rolling(LAG_WARMUP).mean()
+
+     # Demand variation over the seven calendar days before the forecast date.
+     trailing_week = out[TARGET].shift(1).rolling(LAG_WARMUP)
+~~~
+
+The `PostToolUse:Edit` hook returned exit 2 before the direct pytest run.
+
+~~~text
+Leakage tests failed after editing src/features.py:
+[714 rows x 29 columns]
+
+    def test_rolling_mean_excludes_today(feats):
+        """cnt_roll_7 must be the mean of the 7 calendar days *before* today."""
+        by_date = feats.set_index("dteday")[TARGET]
+        date = feats.dteday.iloc[200]
+        window = [date - pd.Timedelta(days=k) for k in range(1, 8)]
+        if all(d in by_date.index for d in window):
+            expected = sum(by_date[d] for d in window) / 7
+>           assert feats.set_index("dteday").cnt_roll_7[date] == pytest.approx(expected)
+E           assert np.float64(4389.0) == 4414.857142857143 ± 0.00441486
+E
+E             comparison failed
+E             Obtained: 4389.0
+E             Expected: 4414.857142857143 ± 0.00441486
+
+tests/test_leakage.py:70: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_leakage.py::test_rolling_mean_excludes_today - assert np.fl...
+1 failed, 9 passed in 6.43s
+~~~
+
+The targeted test failed in Bash.
+
+~~~text
+$ python -m pytest tests/test_leakage.py::test_rolling_mean_excludes_today -q --tb=short
+Error: Exit code 1
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_______________________ test_rolling_mean_excludes_today _______________________
+tests/test_leakage.py:70: in test_rolling_mean_excludes_today
+    assert feats.set_index("dteday").cnt_roll_7[date] == pytest.approx(expected)
+E   assert np.float64(4389.0) == 4414.857142857143 ± 0.00441486
+E
+E     comparison failed
+E     Obtained: 4389.0
+E     Expected: 4414.857142857143 ± 0.00441486
+=========================== short test summary info ============================
+FAILED tests/test_leakage.py::test_rolling_mean_excludes_today - assert np.fl...
+1 failed in 8.27s
+~~~
+
+Claude Code restored the original line(s) in **2 repair turns**. The repair hook returned exit 0, and the same test passed.
+
+~~~text
+$ python -m pytest tests/test_leakage.py::test_rolling_mean_excludes_today -q --tb=short
+.                                                                        [100%]
+1 passed in 4.37s
+~~~
